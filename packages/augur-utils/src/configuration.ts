@@ -112,7 +112,7 @@ export interface SDKConfiguration {
     primaryProvider?: 'jsonrpc' | 'wallet'
   },
   concurrentDBOperationsLimit?: number
-};
+}
 
 export interface ContractAddresses {
   Universe: string;
@@ -156,6 +156,7 @@ export interface ContractAddresses {
   RelayHubV2?: string;
   AugurWalletRegistryV2?: string;
   AccountLoader?: string;
+  ERC20Proxy1155Nexus?: string;
 
   // 0x
   //   The 0x contract names must be what 0x mesh expects.

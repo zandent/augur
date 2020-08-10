@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { BigNumber } from 'bignumber.js';
 import { readFile } from 'async-file';
-import { stringTo32ByteHex, resolveAll, sleep } from './HelperFunctions';
+import { stringTo32ByteHex, resolveAll } from './HelperFunctions';
 import { CompilerOutput } from 'solc';
 import {
     Augur,
@@ -37,13 +37,15 @@ import {
     // Uniswap
     UniswapV2Factory,
     UniswapV2Pair,
-    WETH9, TestNetReputationToken, UniswapV2Router02
-} from "./ContractInterfaces";
+    WETH9,
+    TestNetReputationToken,
+    UniswapV2Router02,
+} from './ContractInterfaces';
 import { Contracts, ContractData } from './Contracts';
 import { Dependencies } from './GenericContractInterfaces';
 import { NetworkId } from '@augurproject/utils';
 import { ContractAddresses, SDKConfiguration, mergeConfig } from '@augurproject/utils';
-import { updateConfig } from "@augurproject/artifacts";
+import { updateConfig } from '@augurproject/artifacts';
 import { TRADING_CONTRACTS, RELAY_HUB_SIGNED_DEPLOY_TX, RELAY_HUB_DEPLOYER_ADDRESS, RELAY_HUB_ADDRESS } from './constants';
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -158,11 +160,11 @@ Deploying to: ${env}
                     data: '0x00',
                     value: '0x3A4965BF58A40000',
                 })
-                let reciept = await response.wait();
+                let receipt = await response.wait();
                 response = await this.provider.sendTransaction(RELAY_HUB_SIGNED_DEPLOY_TX);
-                reciept = await response.wait();
-                if (reciept.contractAddress !== RELAY_HUB_ADDRESS) {
-                    throw new Error(`Relay Hub deployment failed. Deployed address: ${reciept.contractAddress}`);
+                receipt = await response.wait();
+                if (receipt.contractAddress !== RELAY_HUB_ADDRESS) {
+                    throw new Error(`Relay Hub deployment failed. Deployed address: ${receipt.contractAddress}`);
                 }
                 console.log('Relay Hub deployed.')
             }
@@ -176,6 +178,8 @@ Deploying to: ${env}
         } else {
             await this.uploadGSNV2Contracts();
         }
+
+        await this.uploadERC20Proxy1155Contracts();
 
         await this.initializeAllContracts();
         await this.doTradingApprovals();
@@ -204,7 +208,7 @@ Deploying to: ${env}
             console.log('Initializing warp sync market');
             const warpSync = new WarpSync(this.dependencies, this.getContractAddress('WarpSync'));
             await warpSync.initializeUniverse(this.universe.address);
-            
+
             const cash = new Cash(this.dependencies, this.getContractAddress('Cash'));
 
             console.log('Approving Augur');
@@ -309,6 +313,7 @@ Deploying to: ${env}
         mapping['AugurWalletRegistry'] = this.contracts.get('AugurWalletRegistry').address!;
         for (let contract of this.contracts) {
             if (/^I[A-Z].*/.test(contract.contractName)) continue;
+            if (contract.contractName === 'ERC20Proxy1155') continue;
             if (contract.contractName === 'TimeControlled') continue;
             if (contract.contractName === 'Universe') continue;
             if (contract.contractName === 'ReputationToken') continue;
@@ -490,6 +495,18 @@ Deploying to: ${env}
         return relayHubContract.address;
     }
 
+    private async uploadERC20Proxy1155Contracts(): Promise<string> {
+        console.log('Uploading ERC20 proxy contracts');
+        const shareToken = this.contracts.get('ShareToken');
+        const masterProxy = this.contracts.get('ERC20Proxy1155');
+        const nexus = this.contracts.get('ERC20Proxy1155Nexus');
+
+        masterProxy.address = await this.construct(masterProxy, []);
+        nexus.address = await this.construct(nexus, [masterProxy.address, shareToken.address]);
+
+        return nexus.address;
+    }
+
     private async uploadAllContracts(): Promise<void> {
         console.log('Uploading contracts...');
 
@@ -525,7 +542,8 @@ Deploying to: ${env}
         if (contractName === 'Cash') return;
         if (contractName === 'USDC') return;
         if (contractName === 'USDT') return;
-        if (contractName === 'AugurWalletFactory') return;
+        if (contractName === 'ERC20Proxy1155') return;
+        if (contractName === 'ERC20Proxy1155Nexus') return;
         // 0x
         if ([
           'ERC20Proxy',
@@ -550,7 +568,7 @@ Deploying to: ${env}
     private async uploadAndAddToAugur(contract: ContractData, registrationContractName: string = contract.contractName, constructorArgs: any[] = []): Promise<string> {
         if (TRADING_CONTRACTS.includes(registrationContractName)) {
             const alreadyRegisteredAddress = await this.augurTrading!.lookup_(stringTo32ByteHex(registrationContractName));
-            if (alreadyRegisteredAddress != NULL_ADDRESS) {
+            if (alreadyRegisteredAddress !== NULL_ADDRESS) {
                 return alreadyRegisteredAddress;
             }
         } else {
@@ -852,6 +870,7 @@ Deploying to: ${env}
             if (!contract.relativeFilePath.startsWith('trading/')) continue;
             if (/^I[A-Z].*/.test(contract.contractName)) continue;
             if (contract.contractName === 'ZeroXTradeToken') continue;
+            if (contract.contractName === 'ERC20Proxy1155') continue;
             if (contract.address === undefined) throw new Error(`${contract.contractName} not uploaded.`);
             mapping[contract.contractName] = contract.address;
         }
