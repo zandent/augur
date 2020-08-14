@@ -112,7 +112,7 @@ export interface SDKConfiguration {
     primaryProvider?: 'jsonrpc' | 'wallet'
   },
   concurrentDBOperationsLimit?: number
-}
+};
 
 export interface ContractAddresses {
   Universe: string;
@@ -268,8 +268,7 @@ export const DEFAULT_SDK_CONFIGURATION: SDKConfiguration = {
     fallbackProvider: 'torus',
     liteProvider: 'jsonrpc',
     primaryProvider: 'wallet'
-  },
-  concurrentDBOperationsLimit: 10
+  }
 };
 
 export function sanitizeConfig(config: RecursivePartial<SDKConfiguration>): RecursivePartial<SDKConfiguration> {
