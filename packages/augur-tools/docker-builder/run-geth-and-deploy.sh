@@ -19,7 +19,7 @@ else
   yarn flash fake-all --createMarkets
 fi
 
-paraCash=$(node -e 'process.stdout.write(require("./packages/augur-artifacts/build/environments/local.json").version);')
+paraCash=$(node -e 'process.stdout.write(require("./packages/augur-artifacts/build/environments/local.json").addresses.WETH9);')
 echo yarn flash deploy-para-augur -c "$paraCash"
 yarn flash deploy-para-augur -c "$paraCash"
 
