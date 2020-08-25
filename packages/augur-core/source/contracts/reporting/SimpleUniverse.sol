@@ -2,24 +2,24 @@ pragma solidity >=0.5.10;
 
 
 import 'ROOT/reporting/IUniverse.sol';
-import 'ROOT/factories/IReputationTokenFactory.sol';
-import 'ROOT/factories/IDisputeWindowFactory.sol';
-import 'ROOT/factories/IMarketFactory.sol';
-import 'ROOT/factories/IOICashFactory.sol';
-import 'ROOT/reporting/IMarket.sol';
-import 'ROOT/reporting/IV2ReputationToken.sol';
-import 'ROOT/reporting/IDisputeWindow.sol';
-import 'ROOT/reporting/Reporting.sol';
-import 'ROOT/reporting/IRepPriceOracle.sol';
+// import 'ROOT/factories/IReputationTokenFactory.sol';
+// import 'ROOT/factories/IDisputeWindowFactory.sol';
+// import 'ROOT/factories/IMarketFactory.sol';
+// import 'ROOT/factories/IOICashFactory.sol';
+// import 'ROOT/reporting/IMarket.sol';
+// import 'ROOT/reporting/IV2ReputationToken.sol';
+// import 'ROOT/reporting/IDisputeWindow.sol';
+// import 'ROOT/reporting/Reporting.sol';
+// import 'ROOT/reporting/IRepPriceOracle.sol';
 import 'ROOT/libraries/math/SafeMathUint256.sol';
-import 'ROOT/ICash.sol';
-import 'ROOT/reporting/IOICash.sol';
-import 'ROOT/external/IAffiliateValidator.sol';
-import 'ROOT/external/IDaiVat.sol';
-import 'ROOT/external/IDaiPot.sol';
-import 'ROOT/external/IDaiJoin.sol';
-import 'ROOT/utility/IFormulas.sol';
-import 'ROOT/IAugur.sol';
+import 'ROOT/Cash.sol';
+// import 'ROOT/reporting/IOICash.sol';
+// import 'ROOT/external/IAffiliateValidator.sol';
+import 'ROOT/TestNetDaiVat.sol';
+import 'ROOT/TestNetDaiPot.sol';
+import 'ROOT/TestNetDaiJoin.sol';
+//import 'ROOT/utility/IFormulas.sol';
+import 'ROOT/Augur.sol';
 
 
 /**
@@ -29,7 +29,7 @@ import 'ROOT/IAugur.sol';
 contract SimpleUniverse is IUniverse {
     using SafeMathUint256 for uint256;
 
-    IAugur public augur;
+    Augur public augur;
     mapping (address => uint256) private validityBondInAttoCash;
     mapping (address => uint256) private designatedReportStakeInAttoRep;
     mapping (address => uint256) private designatedReportNoShowBondInAttoRep;
@@ -46,19 +46,19 @@ contract SimpleUniverse is IUniverse {
 
     // DAI / DSR specific
     uint256 public totalBalance;
-    ICash public cash;
-    IDaiVat public daiVat;
-    IDaiPot public daiPot;
-    IDaiJoin public daiJoin;
+    Cash public cash;
+    TestNetDaiVat public daiVat;
+    TestNetDaiPot public daiPot;
+    TestNetDaiJoin public daiJoin;
 
     uint256 constant public DAI_ONE = 10 ** 27;
 
-    constructor(IAugur _augur) public {
+    constructor(Augur _augur) public {
         augur = _augur;
-        cash = ICash(augur.lookup("Cash"));
-        daiVat = IDaiVat(augur.lookup("DaiVat"));
-        daiPot = IDaiPot(augur.lookup("DaiPot"));
-        daiJoin = IDaiJoin(augur.lookup("DaiJoin"));
+        cash = Cash(augur.lookup("Cash"));
+        daiVat = TestNetDaiVat(augur.lookup("DaiVat"));
+        daiPot = TestNetDaiPot(augur.lookup("DaiPot"));
+        daiJoin = TestNetDaiJoin(augur.lookup("DaiJoin"));
         daiVat.hope(address(daiPot));
         daiVat.hope(address(daiJoin));
         cash.approve(address(daiJoin), 2 ** 256 - 1);
