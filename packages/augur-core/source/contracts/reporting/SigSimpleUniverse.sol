@@ -1,24 +1,12 @@
 pragma solidity >=0.5.10;
 
 
-import 'ROOT/reporting/IUniverse.sol';
-// import 'ROOT/factories/IReputationTokenFactory.sol';
-// import 'ROOT/factories/IDisputeWindowFactory.sol';
-// import 'ROOT/factories/IMarketFactory.sol';
-// import 'ROOT/factories/IOICashFactory.sol';
-// import 'ROOT/reporting/IMarket.sol';
-// import 'ROOT/reporting/IV2ReputationToken.sol';
-// import 'ROOT/reporting/IDisputeWindow.sol';
-// import 'ROOT/reporting/Reporting.sol';
-// import 'ROOT/reporting/IRepPriceOracle.sol';
+import 'ROOT/reporting/ISimpleUniverse.sol';
 import 'ROOT/libraries/math/SafeMathUint256.sol';
 import 'ROOT/Cash.sol';
-// import 'ROOT/reporting/IOICash.sol';
-// import 'ROOT/external/IAffiliateValidator.sol';
 import 'ROOT/TestNetDaiVat.sol';
 import 'ROOT/TestNetDaiPot.sol';
 import 'ROOT/TestNetDaiJoin.sol';
-//import 'ROOT/utility/IFormulas.sol';
 import 'ROOT/Augur.sol';
 
 
@@ -26,26 +14,13 @@ import 'ROOT/Augur.sol';
  * @title Universe
  * @notice A Universe encapsulates a whole instance of Augur. In the event of a fork in a Universe it will split into child Universes which each represent a different version of the truth with respect to how the forking market should resolve.
  */
-contract SigSimpleUniverse is IUniverse {
+contract SigSimpleUniverse is ISimpleUniverse {
     using SafeMathUint256 for uint256;
     
     // a constant that should be set to the daily block rate of the network
     uint public DAILYBLOCKRATE;
 
     Augur public augur;
-    mapping (address => uint256) private validityBondInAttoCash;
-    mapping (address => uint256) private designatedReportStakeInAttoRep;
-    mapping (address => uint256) private designatedReportNoShowBondInAttoRep;
-    uint256 public previousValidityBondInAttoCash;
-    uint256 public previousDesignatedReportStakeInAttoRep;
-    uint256 public previousDesignatedReportNoShowBondInAttoRep;
-
-    mapping (address => uint256) private shareSettlementFeeDivisor;
-    uint256 public previousReportingFeeDivisor;
-
-    uint256 constant public INITIAL_WINDOW_ID_BUFFER = 365 days * 10 ** 8;
-    uint256 constant public DEFAULT_NUM_OUTCOMES = 2;
-    uint256 constant public DEFAULT_NUM_TICKS = 100;
 
     // DAI / DSR specific
     uint256 public totalBalance;
@@ -121,7 +96,7 @@ contract SigSimpleUniverse is IUniverse {
         _extraCash = cash.balanceOf(address(this));
         // The amount in the DSR pot and VAT must cover our totalBalance of Dai
         assert(daiPot.pie(address(this)).mul(daiPot.chi()).add(daiVat.dai(address(this))) >= totalBalance.mul(DAI_ONE));
-        cash.transfer(address(getOrCreateNextDisputeWindow(false)), _extraCash);
+        cash.transfer(address(this), _extraCash);
         return true;
     }
     
@@ -130,7 +105,7 @@ contract SigSimpleUniverse is IUniverse {
         DAILYBLOCKRATE = dailyblockrate;
     }
 
-    constructor(IAugur _augur, uint dailyblockrate) public {
+    constructor(Augur _augur, uint dailyblockrate) public {
         DAILYBLOCKRATE = dailyblockrate;
         augur = _augur;
         cash = Cash(augur.lookup("Cash"));

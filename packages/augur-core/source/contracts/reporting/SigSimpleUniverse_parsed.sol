@@ -1,58 +1,33 @@
 pragma solidity >=0.5.10;
 
 
-import 'ROOT/reporting/IUniverse.sol';
-import 'ROOT/factories/IReputationTokenFactory.sol';
-import 'ROOT/factories/IDisputeWindowFactory.sol';
-import 'ROOT/factories/IMarketFactory.sol';
-import 'ROOT/factories/IOICashFactory.sol';
-import 'ROOT/reporting/IMarket.sol';
-import 'ROOT/reporting/IV2ReputationToken.sol';
-import 'ROOT/reporting/IDisputeWindow.sol';
-import 'ROOT/reporting/Reporting.sol';
-import 'ROOT/reporting/IRepPriceOracle.sol';
+import 'ROOT/reporting/ISimpleUniverse.sol';
 import 'ROOT/libraries/math/SafeMathUint256.sol';
-import 'ROOT/ICash.sol';
-import 'ROOT/reporting/IOICash.sol';
-import 'ROOT/external/IAffiliateValidator.sol';
-import 'ROOT/external/IDaiVat.sol';
-import 'ROOT/external/IDaiPot.sol';
-import 'ROOT/external/IDaiJoin.sol';
-import 'ROOT/utility/IFormulas.sol';
-import 'ROOT/IAugur.sol';
+import 'ROOT/Cash.sol';
+import 'ROOT/TestNetDaiVat.sol';
+import 'ROOT/TestNetDaiPot.sol';
+import 'ROOT/TestNetDaiJoin.sol';
+import 'ROOT/Augur.sol';
 
 
 /**
  * @title Universe
  * @notice A Universe encapsulates a whole instance of Augur. In the event of a fork in a Universe it will split into child Universes which each represent a different version of the truth with respect to how the forking market should resolve.
  */
-contract SigSimpleUniverse is IUniverse {
+contract SigSimpleUniverse is ISimpleUniverse {
     using SafeMathUint256 for uint256;
     
     
     uint public DAILYBLOCKRATE;
 
-    IAugur public augur;
-    mapping (address => uint256) private validityBondInAttoCash;
-    mapping (address => uint256) private designatedReportStakeInAttoRep;
-    mapping (address => uint256) private designatedReportNoShowBondInAttoRep;
-    uint256 public previousValidityBondInAttoCash;
-    uint256 public previousDesignatedReportStakeInAttoRep;
-    uint256 public previousDesignatedReportNoShowBondInAttoRep;
-
-    mapping (address => uint256) private shareSettlementFeeDivisor;
-    uint256 public previousReportingFeeDivisor;
-
-    uint256 constant public INITIAL_WINDOW_ID_BUFFER = 365 days * 10 ** 8;
-    uint256 constant public DEFAULT_NUM_OUTCOMES = 2;
-    uint256 constant public DEFAULT_NUM_TICKS = 100;
+    Augur public augur;
 
     
     uint256 public totalBalance;
-    ICash public cash;
-    IDaiVat public daiVat;
-    IDaiPot public daiPot;
-    IDaiJoin public daiJoin;
+    Cash public cash;
+    TestNetDaiVat public daiVat;
+    TestNetDaiPot public daiPot;
+    TestNetDaiJoin public daiJoin;
 
     uint256 constant public DAI_ONE = 10 ** 27;
 
@@ -200,7 +175,7 @@ contract SigSimpleUniverse is IUniverse {
         _extraCash = cash.balanceOf(address(this));
         
         assert(daiPot.pie(address(this)).mul(daiPot.chi()).add(daiVat.dai(address(this))) >= totalBalance.mul(DAI_ONE));
-        cash.transfer(address(getOrCreateNextDisputeWindow(false)), _extraCash);
+        cash.transfer(address(this), _extraCash);
         return true;
     }
     
@@ -209,15 +184,15 @@ contract SigSimpleUniverse is IUniverse {
         DAILYBLOCKRATE = dailyblockrate;
     }
 
-    constructor(IAugur _augur, uint dailyblockrate) public {
+    constructor(Augur _augur, uint dailyblockrate) public {
    DailySignal();
    Update();
         DAILYBLOCKRATE = dailyblockrate;
         augur = _augur;
-        cash = ICash(augur.lookup("Cash"));
-        daiVat = IDaiVat(augur.lookup("DaiVat"));
-        daiPot = IDaiPot(augur.lookup("DaiPot"));
-        daiJoin = IDaiJoin(augur.lookup("DaiJoin"));
+        cash = Cash(augur.lookup("Cash"));
+        daiVat = TestNetDaiVat(augur.lookup("DaiVat"));
+        daiPot = TestNetDaiPot(augur.lookup("DaiPot"));
+        daiJoin = TestNetDaiJoin(augur.lookup("DaiJoin"));
         daiVat.hope(address(daiPot));
         daiVat.hope(address(daiJoin));
         cash.approve(address(daiJoin), 2 ** 256 - 1);

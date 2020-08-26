@@ -1,26 +1,22 @@
 pragma solidity >=0.5.10;
 
-import 'ROOT/external/IDaiVat.sol';
+import 'ROOT/TestNetDaiVat.sol';
 import 'ROOT/external/IDaiPot.sol';
-import 'ROOT/ITime.sol';
 
 
 contract TestNetDaiPot is IDaiPot {
     uint256 public Pie;  // total Savings Dai
 
-    IDaiVat public vat;  // CDP engine
+    TestNetDaiVat public vat;  // CDP engine
     uint256 public rho;  // Time of last drip
-
-    ITime public time;
 
     uint constant ONE = 10 ** 27;
 
-    constructor(address vat_, ITime _time) public {
-        vat = IDaiVat(vat_);
+    constructor(address vat_) public {
+        vat = TestNetDaiVat(vat_);
         dsr = ONE;
         chi = ONE;
-        time = _time;
-        rho = time.getTimestamp();
+        rho = block.timestamp;
     }
 
     function rpow(uint x, uint n, uint base) internal pure returns (uint z) {
@@ -64,7 +60,7 @@ contract TestNetDaiPot is IDaiPot {
     }
 
     function drip() public {
-        uint256 _now = time.getTimestamp();
+        uint256 _now = block.timestamp;
         require(_now >= rho);
         uint chi_ = Sub(rmul(rpow(dsr, _now - rho, ONE), chi), chi);
         chi = Add(chi, chi_);
