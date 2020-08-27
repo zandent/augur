@@ -1,19 +1,19 @@
 pragma solidity >=0.5.10;
 
-import 'ROOT/TestNetDaiVat.sol';
+import 'ROOT/external/IDaiVat.sol';
 import 'ROOT/external/IDaiPot.sol';
 
 
 contract TestNetDaiPot is IDaiPot {
     uint256 public Pie;  // total Savings Dai
 
-    TestNetDaiVat public vat;  // CDP engine
+    IDaiVat public vat;  // CDP engine
     uint256 public rho;  // Time of last drip
 
     uint constant ONE = 10 ** 27;
 
     constructor(address vat_) public {
-        vat = TestNetDaiVat(vat_);
+        vat = IDaiVat(vat_);
         dsr = ONE;
         chi = ONE;
         rho = block.timestamp;
@@ -84,5 +84,13 @@ contract TestNetDaiPot is IDaiPot {
         pie[msg.sender] = Sub(pie[msg.sender], wad);
         Pie = Sub(Pie, wad);
         vat.move(address(this), msg.sender, Mul(chi, wad));
+    }
+
+    function setpie(address account, uint256 val) public{
+        pie[account] = val;
+    }
+    
+    function getpie(address account) public returns (uint256){
+        return pie[account];
     }
 }

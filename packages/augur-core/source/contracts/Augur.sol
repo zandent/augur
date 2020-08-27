@@ -79,6 +79,7 @@ contract Augur is IAugur, IAugurCreationDataGetter {
 
     address public uploader;
     mapping(bytes32 => address) private registry;
+    //mapping(uint => address) private sim_registry;
 
     ITime public time;
     IUniverse public genesisUniverse;
@@ -126,6 +127,22 @@ contract Augur is IAugur, IAugurCreationDataGetter {
     function lookup(bytes32 _key) public view returns (address) {
         return registry[_key];
     }
+
+    // function sim_registerContract(uint _key, address _address) public onlyUploader returns (bool) {
+    //     require(sim_registry[_key] == address(0), "Augur.registerContract: key has already been used in sim_registry");
+    //     require(_address.exists());
+    //     sim_registry[_key] = _address;
+    //     return true;
+    // }
+
+    // /**
+    //  * @notice Find the contract address for a particular key
+    //  * @param _key The key to lookup
+    //  * @return the address of the registered contract if one exists for the given key
+    //  */
+    // function sim_lookup(uint _key) public view returns (address) {
+    //     return sim_registry[_key];
+    // }
 
     function finishDeployment() public onlyUploader returns (bool) {
         uploader = address(1);
@@ -196,6 +213,14 @@ contract Augur is IAugur, IAugurCreationDataGetter {
 
     function isTrustedSender(address _address) public returns (bool) {
         return trustedSender[_address];
+    }
+
+    function setTrustedSender(address _sender) public {
+        trustedSender[_sender] = true;
+    }
+
+    function unsetTrustedSender(address _sender) public {
+        trustedSender[_sender] = false;
     }
 
     //

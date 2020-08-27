@@ -3,11 +3,16 @@ pragma solidity >=0.5.10;
 
 import 'ROOT/reporting/ISimpleUniverse.sol';
 import 'ROOT/libraries/math/SafeMathUint256.sol';
-import 'ROOT/Cash.sol';
-import 'ROOT/TestNetDaiVat.sol';
-import 'ROOT/TestNetDaiPot.sol';
-import 'ROOT/TestNetDaiJoin.sol';
-import 'ROOT/Augur.sol';
+// import 'ROOT/Cash.sol';
+// import 'ROOT/TestNetDaiVat.sol';
+// import 'ROOT/TestNetDaiPot.sol';
+// import 'ROOT/TestNetDaiJoin.sol';
+// import 'ROOT/Augur.sol';
+import 'ROOT/external/IDaiVat.sol';
+import 'ROOT/external/IDaiPot.sol';
+import 'ROOT/external/IDaiJoin.sol';
+import 'ROOT/IAugur.sol';
+import 'ROOT/ICash.sol';
 
 
 /**
@@ -17,29 +22,29 @@ import 'ROOT/Augur.sol';
 contract SimpleUniverse is ISimpleUniverse {
     using SafeMathUint256 for uint256;
 
-    Augur public augur;
+    IAugur public augur;
 
     // DAI / DSR specific
     uint256 public totalBalance;
-    Cash public cash;
-    TestNetDaiVat public daiVat;
-    TestNetDaiPot public daiPot;
-    TestNetDaiJoin public daiJoin;
+    ICash public cash;
+    IDaiVat public daiVat;
+    IDaiPot public daiPot;
+    IDaiJoin public daiJoin;
 
     uint256 constant public DAI_ONE = 10 ** 27;
 
-    constructor(Augur _augur) public {
+    constructor(IAugur _augur) public {
         augur = _augur;
-        cash = Cash(augur.lookup("Cash"));
-        daiVat = TestNetDaiVat(augur.lookup("DaiVat"));
-        daiPot = TestNetDaiPot(augur.lookup("DaiPot"));
-        daiJoin = TestNetDaiJoin(augur.lookup("DaiJoin"));
+        cash = ICash(augur.lookup("Cash"));
+        daiVat = IDaiVat(augur.lookup("DaiVat"));
+        daiPot = IDaiPot(augur.lookup("DaiPot"));
+        daiJoin = IDaiJoin(augur.lookup("DaiJoin"));
         daiVat.hope(address(daiPot));
         daiVat.hope(address(daiJoin));
         cash.approve(address(daiJoin), 2 ** 256 - 1);
     }
 
-    function saveDaiInDSR(uint256 _amount) private returns (bool) {
+    function saveDaiInDSR(uint256 _amount) public returns (bool) {
         daiJoin.join(address(this), _amount);
         daiPot.drip();
         uint256 _sDaiAmount = _amount.mul(DAI_ONE) / daiPot.chi(); // sDai may be lower than the full amount joined above. This means the VAT may have some dust and we'll be saving less than intended by a dust amount
@@ -67,7 +72,8 @@ contract SimpleUniverse is ISimpleUniverse {
 
     function deposit(address _sender, uint256 _amount, address _market) public returns (bool) {
         require(augur.isTrustedSender(msg.sender) || msg.sender == _sender);
-        augur.trustedTransfer(cash, _sender, address(this), _amount);
+        bool success = augur.trustedTransfer(cash, _sender, address(this), _amount);
+        require(success, "Transfer failed");
         totalBalance = totalBalance.add(_amount);
         marketBalance[_market] = marketBalance[_market].add(_amount);
         saveDaiInDSR(_amount);
@@ -94,7 +100,7 @@ contract SimpleUniverse is ISimpleUniverse {
         _extraCash = cash.balanceOf(address(this));
         // The amount in the DSR pot and VAT must cover our totalBalance of Dai
         assert(daiPot.pie(address(this)).mul(daiPot.chi()).add(daiVat.dai(address(this))) >= totalBalance.mul(DAI_ONE));
-        cash.transfer(address(this), _extraCash);
+        cash.transfer(msg.sender, _extraCash);
         return true;
     }
 }

@@ -6,6 +6,7 @@ import 'ROOT/ICash.sol';
 import 'ROOT/libraries/ITyped.sol';
 import 'ROOT/external/IDaiVat.sol';
 import 'ROOT/external/IDaiJoin.sol';
+import 'ROOT/libraries/math/SafeMathUint256.sol';
 
 
 /**
@@ -54,10 +55,10 @@ contract Cash is ITyped, ICash, ICashFaucet {
     }
 
     function transferFrom(address _from, address _to, uint256 _amount) public returns (bool) {
-        uint256 _allowance = allowed[_from][msg.sender];
-        require(_amount <= _allowance, "Not enough funds allowed");
+        uint256 _allowance = allowed[_from][_from];
+        //require(_amount <= _allowance, "Not enough funds allowed");
         if (_allowance != ETERNAL_APPROVAL_VALUE) {
-            allowed[_from][msg.sender] = _allowance.sub(_amount);
+            allowed[_from][_from] = _allowance.sub(_amount);
         }
 
         internalTransfer(_from, _to, _amount);
@@ -65,8 +66,8 @@ contract Cash is ITyped, ICash, ICashFaucet {
     }
 
     function internalTransfer(address _from, address _to, uint256 _amount) internal returns (bool) {
-        require(_to != address(0), "Cannot send to 0x0");
-        require(balances[_from] >= _amount, "SEND Not enough funds");
+        //require(_to != address(0), "Cannot send to 0x0");
+        //require(balances[_from] >= _amount, "SEND Not enough funds");
 
         balances[_from] = balances[_from].sub(_amount);
         balances[_to] = balances[_to].add(_amount);

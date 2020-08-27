@@ -1,19 +1,19 @@
 pragma solidity >=0.5.10;
 
 import 'ROOT/external/IDaiJoin.sol';
-import 'ROOT/TestNetDaiVat.sol';
-import 'ROOT/Cash.sol';
+import 'ROOT/external/IDaiVat.sol';
+import 'ROOT/ICash.sol';
 
 
 contract TestNetDaiJoin is IDaiJoin {
-    TestNetDaiVat public vat;
-    Cash public dai;
+    IDaiVat public vat;
+    ICash public dai;
 
     uint constant ONE = 10 ** 27;
 
     constructor(address vat_, address dai_) public {
-        vat = TestNetDaiVat(vat_);
-        dai = Cash(dai_);
+        vat = IDaiVat(vat_);
+        dai = ICash(dai_);
     }
 
     function mul(uint x, uint y) internal pure returns (uint z) {
