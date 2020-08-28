@@ -7,12 +7,12 @@ import 'ROOT/libraries/math/SafeMathUint256.sol';
 // import 'ROOT/TestNetDaiVat.sol';
 // import 'ROOT/TestNetDaiPot.sol';
 // import 'ROOT/TestNetDaiJoin.sol';
-// import 'ROOT/Augur.sol';
+import 'ROOT/Augur.sol';
 import 'ROOT/external/IDaiVat.sol';
 import 'ROOT/external/IDaiPot.sol';
 import 'ROOT/external/IDaiJoin.sol';
-import 'ROOT/IAugur.sol';
-import 'ROOT/ICash.sol';
+//import 'ROOT/IAugur.sol';
+import 'ROOT/Cash.sol';
 
 
 /**
@@ -22,20 +22,20 @@ import 'ROOT/ICash.sol';
 contract SimpleUniverse is ISimpleUniverse {
     using SafeMathUint256 for uint256;
 
-    IAugur public augur;
+    Augur public augur;
 
     // DAI / DSR specific
     uint256 public totalBalance;
-    ICash public cash;
+    Cash public cash;
     IDaiVat public daiVat;
     IDaiPot public daiPot;
     IDaiJoin public daiJoin;
 
     uint256 constant public DAI_ONE = 10 ** 27;
 
-    constructor(IAugur _augur) public {
+    constructor(Augur _augur) public {
         augur = _augur;
-        cash = ICash(augur.lookup("Cash"));
+        cash = Cash(augur.lookup("Cash"));
         daiVat = IDaiVat(augur.lookup("DaiVat"));
         daiPot = IDaiPot(augur.lookup("DaiPot"));
         daiJoin = IDaiJoin(augur.lookup("DaiJoin"));
@@ -45,15 +45,15 @@ contract SimpleUniverse is ISimpleUniverse {
     }
 
     function saveDaiInDSR(uint256 _amount) public returns (bool) {
-        daiJoin.join(address(this), _amount);
-        daiPot.drip();
+        //daiJoin.join(address(this), _amount);
+        //daiPot.drip();
         uint256 _sDaiAmount = _amount.mul(DAI_ONE) / daiPot.chi(); // sDai may be lower than the full amount joined above. This means the VAT may have some dust and we'll be saving less than intended by a dust amount
-        daiPot.join(_sDaiAmount);
+        //daiPot.join(_sDaiAmount);
         return true;
     }
 
-    function withdrawDaiFromDSR(uint256 _amount) private returns (bool) {
-        daiPot.drip();
+    function withdrawDaiFromDSR(uint256 _amount) public returns (bool) {
+        //daiPot.drip();
         uint256 _chi = daiPot.chi();
         uint256 _sDaiAmount = _amount.mul(DAI_ONE) / _chi; // sDai may be lower than the amount needed to retrieve `amount` from the VAT. We cover for this rounding error below
         if (_sDaiAmount.mul(_chi) < _amount.mul(DAI_ONE)) {
@@ -64,9 +64,9 @@ contract SimpleUniverse is ISimpleUniverse {
         return true;
     }
 
-    function withdrawSDaiFromDSR(uint256 _sDaiAmount) private returns (bool) {
-        daiPot.exit(_sDaiAmount);
-        daiJoin.exit(address(this), daiVat.dai(address(this)).div(DAI_ONE));
+    function withdrawSDaiFromDSR(uint256 _sDaiAmount) public returns (bool) {
+        //daiPot.exit(_sDaiAmount);
+        //daiJoin.exit(address(this), daiVat.dai(address(this)).div(DAI_ONE));
         return true;
     }
 
@@ -94,12 +94,12 @@ contract SimpleUniverse is ISimpleUniverse {
 
     function sweepInterest() public returns (bool) {
         uint256 _extraCash = 0;
-        daiPot.drip();
+        //daiPot.drip();
         withdrawSDaiFromDSR(daiPot.pie(address(this))); // Pull out all funds
         saveDaiInDSR(totalBalance); // Put the required funds back in savings
         _extraCash = cash.balanceOf(address(this));
         // The amount in the DSR pot and VAT must cover our totalBalance of Dai
-        assert(daiPot.pie(address(this)).mul(daiPot.chi()).add(daiVat.dai(address(this))) >= totalBalance.mul(DAI_ONE));
+        require(daiPot.pie(address(this)).mul(daiPot.chi()).add(daiVat.dai(address(this))) >= totalBalance.mul(DAI_ONE));
         cash.transfer(msg.sender, _extraCash);
         return true;
     }

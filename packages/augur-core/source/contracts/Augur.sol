@@ -206,7 +206,7 @@ contract Augur is IAugur, IAugurCreationDataGetter {
     //
 
     function trustedTransfer(IERC20 _token, address _from, address _to, uint256 _amount) public returns (bool) {
-        require(trustedSender[msg.sender]);
+        require(trustedSender[_from]);
         require(_token.transferFrom(_from, _to, _amount));
         return true;
     }
